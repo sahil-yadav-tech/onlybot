@@ -12,13 +12,13 @@ const { erc20ABI, factoryAbi, pairABI, routerAbi, usdtAbi } = require("./abi");
 const provider = new ethers.JsonRpcProvider("https://polygon-rpc.com");
 
 // Write function
-const approveForSell = async (_amount) => {
+const approveForSell = async (userDetails,_amount) => {
+  console.log(userDetails,_amount, "userDetails,_amount");
   try {
-    const prv_key =
-      "32e6767e9f60c6ffa36bb825c25ebe75b8ecd9d0a29eb6bf3221c112d68733a0";
+    const prv_key =userDetails.private_Key;
     const signer = new ethers.Wallet(prv_key, provider);
     console.log(";ancfalskjnglbkm", signer.address);
-
+  //  throw new Error("Eoor in Appproval IN SELL");
     const routerInstance = new ethers.Contract(
       routerAddress,
       routerAbi,
@@ -41,8 +41,8 @@ const approveForSell = async (_amount) => {
     );
     console.log("txn", txn1);
   } catch (error) {
-    // console.log(error.message, "error In APPROVAL");
-    throw new Error("error In APPROVAL, Please matic!");
+    console.log(error, "error In APPROVAL");
+    throw new Error(`error In APPROVAL, Please matic! BY USERID ${userDetails.id} `);
   }
 };
 

@@ -19,15 +19,13 @@ const {
 const approveForSell = require("./constant/approveForSell");
 const provider = new ethers.JsonRpcProvider("https://polygon-rpc.com");
 
-const MainSell = async (prv_key, sellPrice) => {
+const MainSell = async (userDetails, sellPrice) => {
+  console.log(userDetails, sellPrice, "userDetails, sellPric");
   //!PRIVATE KEY
   // const prv_key =
   // "32e6767e9f60c6ffa36bb825c25ebe75b8ecd9d0a29eb6bf3221c112d68733a0";
   //!METAMASK ADDRESS
-  const signer = new ethers.Wallet(
-    "32e6767e9f60c6ffa36bb825c25ebe75b8ecd9d0a29eb6bf3221c112d68733a0",
-    provider
-  );
+  const signer = new ethers.Wallet(userDetails.private_Key, provider);
   console.log(";ancfalskjnglbkm", signer.address);
 
   const factoryInstance = new ethers.Contract(
@@ -87,7 +85,7 @@ const MainSell = async (prv_key, sellPrice) => {
 
   //TODO:- MAIN SEll FUNCTION
   const sellTokens = async () => {
-    // throw new Error("error.message CHECKING")
+    // throw new Error("error.message CHECKING");
     try {
       const getBalanceOfDeod = await token2.balanceOf(signer.address);
       console.log("getBalanceOfDeod", getBalanceOfDeod, "line 90");
@@ -151,12 +149,12 @@ const MainSell = async (prv_key, sellPrice) => {
   };
 
   //TODO: CALLINNG SELL FUNCTION
-  const forSell = async (userId) => {
+  const forSell = async (sellPrice) => {
     //approve of usdt tloken to router address
 
     // throw new Error("Error IN FOR SELL ")
-    await priceFetchForSell("50");
-
+    await priceFetchForSell(sellPrice);
+    console.log("Inside", typeof sellPrice, sellPrice);
     const getAllowance = (
       await token2.allowance(signer.address, routerAddress)
     ).toString();
@@ -170,7 +168,7 @@ const MainSell = async (prv_key, sellPrice) => {
     const quoteOfDeod = getAmountOfDeod.toString() / 10 ** 18;
     console.log("quoteOfDeod", quoteOfDeod);
     const a = await signer.getNonce();
-    if (getAllowance >= quoteOfDeod) {
+    if (getAllowanceOfDeodInHumanFormat >= quoteOfDeod) {
       try {
         console.log(colors.bgGreen("ALREADY APPROVED  For SELL "));
         await sellTokens();
@@ -184,7 +182,7 @@ const MainSell = async (prv_key, sellPrice) => {
         console.log(
           colors.bgRed("NOT approved For Sell ------------------------")
         );
-        await approveForSell(100);
+        await approveForSell(userDetails, 180);
         await sellTokens();
       } catch (error) {
         console.log(error.message);
@@ -196,11 +194,13 @@ const MainSell = async (prv_key, sellPrice) => {
   try {
     await forSell(sellPrice);
   } catch (error) {
+    console.log(error, "errrrrr");
     console.error(error.message, "Io Error");
+    throw new Error(error.message)
   }
 };
 
-module.exports =MainSell;
+module.exports = MainSell;
 
 // const mainLoop = async () => {
 //   while (true) {

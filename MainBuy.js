@@ -19,9 +19,9 @@ const provider = new ethers.JsonRpcProvider("https://polygon-rpc.com");
 const MainBuy = async (userDetails, buyPrice) => {
   console.log(userDetails, buyPrice, "PARAMETERS IN BUY");
 
+  // --------------- IMPORT SECTION IN BUY  START --------------- //
   const signer = new ethers.Wallet(userDetails.private_Key, provider);
-  console.log(signer.address, "Metamask  ------------- Address");
-  // return true;
+  console.log(signer.address, "Metamask Address");
   const routerInstance = new ethers.Contract(routerAddress, routerAbi, signer);
   const token1 = new ethers.Contract(fromAddress, erc20ABI, signer); //usdt
   const token2 = new ethers.Contract(toAddress, erc20ABI, signer); //deod
@@ -29,8 +29,9 @@ const MainBuy = async (userDetails, buyPrice) => {
   let getAmountOfUsdt;
   let getAmountOfDeod;
   let getAmountOfUsdtInHumanformat;
+  // --------------- IMPORT SECTION IN BUY  STOP --------------- //
 
-  //!FETCH PRICE FOR BUY
+  //!FETCH PRICE FOR BUY --------------------
   const priceFetchForBuy = async (amount) => {
     // throw new Error("EROR WHILE FETCHING PRICE")
     try {
@@ -47,17 +48,17 @@ const MainBuy = async (userDetails, buyPrice) => {
         amountsOut1[1].toString(),
         decimal2
       );
+      // console.log(amountInHumanFormat, "amountInHumanFormat amountInHumanFormat");
     } catch (error) {
       throw new Error("ERROR WHILE FETCHING PRICE");
     }
   };
 
-  //TODO:- MAIN BUY FUNCTION
+  //TODO:- MAIN BUY FUNCTION ---------------
   const buyTokens = async (BuyPrice) => {
     try {
       console.log(colors.bgBrightYellow("INSIDE BUY TOKEN FINAL :)"));
       // throw new Error("Error In BuYTOKENS ")
-      return
 
       const balanceInWei = await provider.getBalance(signer.address);
       console.log("balanceInWeiForBuy", balanceInWei);
@@ -71,9 +72,8 @@ const MainBuy = async (userDetails, buyPrice) => {
 
       //?Checking USDT BALANCE
       if (matic >= 0.4) {
-        if (getBalanceOfUsdtOfWallet >= quoteInHumanFormat) {
-          console.log(true);
-          return true;
+        if (getBalanceOfUsdtInHumanFormat >= quoteInHumanFormat) {
+          console.log(true, "EveryThing Working Fine Buy Function");
           try {
             const buyTokens = await routerInstance.swapExactTokensForTokens(
               getAmountOfUsdt,
@@ -85,50 +85,55 @@ const MainBuy = async (userDetails, buyPrice) => {
               signer.address,
               3418555736
             );
-  
+
             const transaction2 = await provider.waitForTransaction(
               buyTokens.hash,
               1,
               150000
             );
-            console.log("transaction2", transaction2);
+            console.log(transaction2.hash, "congratulations Buy transaction done ");
           } catch (error) {
-            // console.log(error, "error  ss s");
+            // console.log(error, "error between 90 to 100");
             throw new Error("Error in Buying");
           }
         } else {
-          throw new Error("Insufficient Usdt Amount");
           console.log("Insufficient Usdt Amount");
+          throw new Error("Insufficient Usdt Amount");
         }
-      }else{
+      } else {
         console.log("Insufficient Matic for buying");
         throw new Error("Insufficient Matic for buying");
-
       }
-     
     } catch (error) {
+      // console.log(error, "error");
       throw new Error(error.message);
     }
   };
 
-  //TODO: CALLINNG BUY FUNCTION
+  //TODO: CALLINNG BUY FUNCTION -------------
   const forBuy = async (amount) => {
     try {
       //!FETCHING PRICE
       const amountToString = amount.toString();
       await priceFetchForBuy(amountToString);
+
       const getAllowance = (
         await token1.allowance(signer.address, routerAddress)
       ).toString();
+      // console.log("getAllowance", getAllowance);
+
       const getAllowanceInHumanFormat = getAllowance / 10 ** 6;
-      getAmountOfUsdtInHumanformat = (getAmountOfUsdt / 10 ** 6).toString();
+      // console.log("getAllowanceInHumanFormat", getAllowanceInHumanFormat);
+
+      getAmountOfUsdtInHumanformat = getAmountOfUsdt / 10 ** 6;
+      // console.log("getAmountOfUsdtInHumanformat", getAmountOfUsdtInHumanformat);
 
       if (getAllowanceInHumanFormat >= getAmountOfUsdtInHumanformat) {
         try {
           console.log(colors.bgGreen("ALREADY APPROVED  For Buy "));
           await buyTokens();
         } catch (error) {
-          console.log();
+          // console.log(error, "Error Where Buy is Already Approved");
           throw new Error(error.message);
         }
       } else {
@@ -136,14 +141,15 @@ const MainBuy = async (userDetails, buyPrice) => {
           console.log(
             colors.bgRed("NOT approved For Buy ------------------------")
           );
-          await approveForBuy(1, userDetails.private_Key);
+          await approveForBuy(4, userDetails.private_Key);
           await buyTokens();
         } catch (error) {
+          // console.log(error, "Errro Where buy Not approved");
           throw new Error(error.message);
         }
       }
     } catch (error) {
-      // console.log(error.message, "error error in ");
+      console.log(error,"Errror in For function tryCatch function");
       throw new Error(error.message);
     }
   };
@@ -151,8 +157,8 @@ const MainBuy = async (userDetails, buyPrice) => {
   try {
     await forBuy(buyPrice);
   } catch (error) {
-    console.error(error.message, "Io MAIN --ERROR--");
-    throw new Error(error.message)
+    // console.log(error, "Error in ForBuy TryCatch ");
+    throw new Error(error.message);
   }
 };
 
