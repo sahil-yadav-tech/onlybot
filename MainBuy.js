@@ -17,11 +17,11 @@ const approveForBuy = require("./constant/approveForBuy");
 const provider = new ethers.JsonRpcProvider("https://polygon-rpc.com");
 
 const MainBuy = async (userDetails, buyPrice) => {
-  console.log(userDetails, buyPrice, "PARAMETERS IN BUY");
+  // console.log(userDetails, buyPrice, "PARAMETERS IN BUY");
 
   // --------------- IMPORT SECTION IN BUY  START --------------- //
   const signer = new ethers.Wallet(userDetails.private_Key, provider);
-  console.log(signer.address, "Metamask Address");
+  // console.log(signer.address, "Metamask Address");
   const routerInstance = new ethers.Contract(routerAddress, routerAbi, signer);
   const token1 = new ethers.Contract(fromAddress, erc20ABI, signer); //usdt
   const token2 = new ethers.Contract(toAddress, erc20ABI, signer); //deod
@@ -33,7 +33,7 @@ const MainBuy = async (userDetails, buyPrice) => {
 
   //!FETCH PRICE FOR BUY --------------------
   const priceFetchForBuy = async (amount) => {
-    // throw new Error("EROR WHILE FETCHING PRICE")
+    throw new Error("EROR WHILE FETCHING PRICE")
     try {
       const decimal1 = await token1.decimals();
       const decimal2 = await token2.decimals();
@@ -61,7 +61,7 @@ const MainBuy = async (userDetails, buyPrice) => {
       // throw new Error("Error In BuYTOKENS ")
 
       const balanceInWei = await provider.getBalance(signer.address);
-      console.log("balanceInWeiForBuy", balanceInWei);
+      // console.log("balanceInWeiForBuy", balanceInWei);
       const matic = await ethers.formatEther(balanceInWei);
 
       const getBalanceOfUsdtOfWallet = (
@@ -73,7 +73,7 @@ const MainBuy = async (userDetails, buyPrice) => {
       //?Checking USDT BALANCE
       if (matic >= 0.4) {
         if (getBalanceOfUsdtInHumanFormat >= quoteInHumanFormat) {
-          console.log(true, "EveryThing Working Fine Buy Function");
+          console.log(true, "EveryThing Working Fine Buy Functio insid buy main funcnction");
           try {
             const buyTokens = await routerInstance.swapExactTokensForTokens(
               getAmountOfUsdt,
@@ -91,9 +91,9 @@ const MainBuy = async (userDetails, buyPrice) => {
               1,
               150000
             );
-            console.log(transaction2.hash, "congratulations Buy transaction done ");
+            console.log(transaction2.hash, "congratulations Buy transaction done");
           } catch (error) {
-            // console.log(error, "error between 90 to 100");
+            console.log(error, "error between 90 to 100");
             throw new Error("Error in Buying");
           }
         } else {
@@ -101,7 +101,7 @@ const MainBuy = async (userDetails, buyPrice) => {
           throw new Error("Insufficient Usdt Amount");
         }
       } else {
-        console.log("Insufficient Matic for buying");
+        // console.log("Insufficient Matic for buying");
         throw new Error("Insufficient Matic for buying");
       }
     } catch (error) {
@@ -149,7 +149,7 @@ const MainBuy = async (userDetails, buyPrice) => {
         }
       }
     } catch (error) {
-      console.log(error,"Errror in For function tryCatch function");
+      // console.log(error,"Errror in For function tryCatch function");
       throw new Error(error.message);
     }
   };
@@ -158,7 +158,8 @@ const MainBuy = async (userDetails, buyPrice) => {
     await forBuy(buyPrice);
   } catch (error) {
     // console.log(error, "Error in ForBuy TryCatch ");
-    throw new Error(error.message);
+    throw new Error(`${error.message} By User Id ${userDetails.id} action Buy`);
+    // userDetails
   }
 };
 

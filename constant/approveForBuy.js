@@ -14,25 +14,36 @@ const provider = new ethers.JsonRpcProvider("https://polygon-rpc.com");
 // Write function
 const approveForBuy = async (_amount, private_key) => {
   const signer = new ethers.Wallet(private_key, provider);
-  console.log(";ancfalskjnglbkm", signer.address);
+  // console.log(";ancfalskjnglbkm", signer.address);
   const routerInstance = new ethers.Contract(routerAddress, routerAbi, signer);
   const token1 = new ethers.Contract(fromAddress, usdtAbi, signer); //usdt
   const token2 = new ethers.Contract(toAddress, erc20ABI, signer); //deod
 
   console.log(colors.bgBrightBlue("INSIDE BUY APPROVE FUNCTION"));
   try {
-    const getApproveOfFirstToken = await token1.approve(
-      routerAddress,
-      (_amount * 10 ** 6).toString()
-    );
-    // console.log(getApproveOfFirstToken, "Inside approvr once ");
+    const balanceInWei = await provider.getBalance(signer.address);
+    // console.log("balanceInWei For buying Approval", balanceInWei);
 
-    const txn = await provider.waitForTransaction(
-      getApproveOfFirstToken.hash,
-      1,
-      150000
-    );
-    console.log(txn, "Approval Done By Buy");
+    const matic = await ethers.formatEther(balanceInWei);
+    // console.log("matic for buying approval", matic);
+
+    if (matic >= 0.2) {
+      const getApproveOfFirstToken = await token1.approve(
+        routerAddress,
+        (_amount * 10 ** 6).toString()
+      );
+      // console.log(getApproveOfFirstToken, "Inside approvr once ");
+
+      const txn = await provider.waitForTransaction(
+        getApproveOfFirstToken.hash,
+        1,
+        150000
+      );
+      console.log(txn.hash, "Approval Done By Buy");
+    }else{
+      console.log("Not Enough Matic for Buying approval");
+      throw new Error("Not Enough Matic for Buying approval");
+    }
   } catch (error) {
     throw new Error("Error in Buy approval");
   }

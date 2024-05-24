@@ -9,7 +9,7 @@ const errorSchema = new mongoose.Schema({
         type: String,
         required: true
     },
-    errorList: {
+    errorAction: {
         type: String,
         default: "Less price please check matic and amount" // Default error message
     },

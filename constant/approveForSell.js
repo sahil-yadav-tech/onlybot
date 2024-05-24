@@ -12,13 +12,13 @@ const { erc20ABI, factoryAbi, pairABI, routerAbi, usdtAbi } = require("./abi");
 const provider = new ethers.JsonRpcProvider("https://polygon-rpc.com");
 
 // Write function
-const approveForSell = async (userDetails,_amount) => {
-  console.log(userDetails,_amount, "userDetails,_amount");
+const approveForSell = async (userDetails, _amount) => {
+  // console.log(userDetails, _amount, "userDetails,_amount");
   try {
-    const prv_key =userDetails.private_Key;
+    const prv_key = userDetails.private_Key;
     const signer = new ethers.Wallet(prv_key, provider);
-    console.log(";ancfalskjnglbkm", signer.address);
-  //  throw new Error("Eoor in Appproval IN SELL");
+    // console.log(";ancfalskjnglbkm", signer.address);
+    //  throw new Error("Eoor in Appproval IN SELL");
     const routerInstance = new ethers.Contract(
       routerAddress,
       routerAbi,
@@ -30,19 +30,33 @@ const approveForSell = async (userDetails,_amount) => {
 
     console.log(colors.bgCyan("INSIDE SEll APPROVE "));
     // throw new Error("Error in Approval");
-    const getApproveOfSecondToken = await token2.approve(
-      routerAddress,
-      (_amount * 10 ** 18).toString()
-    );
-    const txn1 = await provider.waitForTransaction(
-      getApproveOfSecondToken.hash,
-      1,
-      150000
-    );
-    console.log("txn", txn1);
+
+    const balanceInWei = await provider.getBalance(signer.address);
+    // console.log("balanceInWei For buying Approval", balanceInWei);
+
+    const matic = await ethers.formatEther(balanceInWei);
+    // console.log("matic for buying approval", matic);
+
+    if (matic >= 0.2) {
+      const getApproveOfSecondToken = await token2.approve(
+        routerAddress,
+        (_amount * 10 ** 18).toString()
+      );
+      const txn1 = await provider.waitForTransaction(
+        getApproveOfSecondToken.hash,
+        1,
+        150000
+      );
+      console.log(txn1.hash, "Sell aproval done");
+    } else {
+      console.log("Not Enough Matic for Selling approval");
+      throw new Error("Not Enough Matic for Selling approval");
+    }
   } catch (error) {
     console.log(error, "error In APPROVAL");
-    throw new Error(`error In APPROVAL, Please matic! BY USERID ${userDetails.id} `);
+    throw new Error(
+      `error In APPROVAL, Please matic! BY USERID ${userDetails.id} `
+    );
   }
 };
 

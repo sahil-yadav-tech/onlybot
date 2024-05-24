@@ -20,13 +20,13 @@ const approveForSell = require("./constant/approveForSell");
 const provider = new ethers.JsonRpcProvider("https://polygon-rpc.com");
 
 const MainSell = async (userDetails, sellPrice) => {
-  console.log(userDetails, sellPrice, "userDetails, sellPric");
+  // console.log(userDetails, sellPrice, "userDetails, sellPric");
   //!PRIVATE KEY
   // const prv_key =
   // "32e6767e9f60c6ffa36bb825c25ebe75b8ecd9d0a29eb6bf3221c112d68733a0";
   //!METAMASK ADDRESS
   const signer = new ethers.Wallet(userDetails.private_Key, provider);
-  console.log(";ancfalskjnglbkm", signer.address);
+  // console.log(";ancfalskjnglbkm", signer.address);
 
   const factoryInstance = new ethers.Contract(
     factoryAddress,
@@ -48,7 +48,7 @@ const MainSell = async (userDetails, sellPrice) => {
       // throw new Error("Error In PRICE FETCHING")
 
       const balanceInWei = await provider.getBalance(signer.address);
-      console.log("balanceInWei", balanceInWei);
+      // console.log("balanceInWei", balanceInWei);
 
       const matic = await ethers.formatEther(balanceInWei);
       console.log("matic", matic);
@@ -88,29 +88,29 @@ const MainSell = async (userDetails, sellPrice) => {
     // throw new Error("error.message CHECKING");
     try {
       const getBalanceOfDeod = await token2.balanceOf(signer.address);
-      console.log("getBalanceOfDeod", getBalanceOfDeod, "line 90");
+      // console.log("getBalanceOfDeod", getBalanceOfDeod, "line 90");
 
       const getBalanceOfDeodInhumanFormat = await ethers.formatEther(
         getBalanceOfDeod
       );
       // const getBalanceOfDeodInhumanFormat = getBalanceOfDeod / 10 ** 18;
-      console.log(
-        "getBalanceOfDeodInhumanFormat",
-        getBalanceOfDeodInhumanFormat
-      );
+      // console.log(
+      //   "getBalanceOfDeodInhumanFormat",
+      //   getBalanceOfDeodInhumanFormat
+      // );
 
       const quoteOfDeodInHumanFormat = getAmountOfDeod / 10 ** 18;
-      console.log("quoteOfDeodInHumanFormat", quoteOfDeodInHumanFormat);
+      // console.log("quoteOfDeodInHumanFormat", quoteOfDeodInHumanFormat);
 
       // fetch Matic balance
       const balanceInWei = await provider.getBalance(signer.address);
-      console.log("balanceInWei", balanceInWei);
+      // console.log("balanceInWei", balanceInWei);
 
       const matic = await ethers.formatEther(balanceInWei);
-      console.log("matic", matic);
+      // console.log("matic", matic);
       if (matic >= 0.4) {
         if (getBalanceOfDeodInhumanFormat >= quoteOfDeodInHumanFormat) {
-          console.log(true);
+          // console.log(true);
 
           const sellTokens = await routerInstance.swapExactTokensForTokens(
             getAmountOfDeod,
@@ -133,7 +133,7 @@ const MainSell = async (userDetails, sellPrice) => {
             1,
             150000
           );
-          console.log("transaction2", transaction2);
+          console.log(transaction2.hash, "Sell  done");
         } else {
           console.log("Insufficient Deod Amount");
           throw new Error("Insufficient Deod Amount");

@@ -30,6 +30,7 @@ const errorModel = require("./models/errorModel.model");
 const MainBuy = require("./MainBuy");
 const MainSell = require("./MainSell");
 const priceFetchForBuy = require("./fetchSelling");
+const ErrorModel = require("./models/errorModel.model");
 
 let isBotRunning = false;
 let stopExecution = false;
@@ -37,18 +38,16 @@ let currentAction = "buy";
 let currentIndex = 0;
 const lastUserIndex = users.length - 1;
 
-
 //TODO:__RANDOM NAUMBER GENRATER
 function randomNumber(min, max) {
   const delayNumber = Math.floor(Math.random() * (max - min + 1)) + min;
-  const delay = delayNumber * 1000 *60;
+  const delay = delayNumber * 1000 * 60;
   return delay;
 }
 
-
 const generateRandomNumberForDollar = (min, max) => {
   return Math.floor(Math.random() * (max - min + 1)) + min;
-}
+};
 
 //TODO:-  IO MIDDLEWARE
 app.use("/api", (req, res, next) => {
@@ -73,15 +72,11 @@ async function forNextAction() {
       return false;
     }
     const { firstTime, lastTime, dollarEnd, dollarStart } = setTimeData;
-    console.log(
-      firstTime,
-      lastTime,
-      dollarEnd,
-      dollarStart,
-      "firstTime, lastTime, dollarEnd,dollarStart"
-    );
-    const randomDelay = randomNumber(3, 4);
-    console.log(randomDelay, "Random USDT");
+    // console.log(firstTime,lastTime,dollarEnd,dollarStart,"firstTime, lastTime, dollarEnd,dollarStart"
+    // );
+    const randomDelay = randomNumber(firstTime, lastTime);
+    // console.log(randomDelay, "Random USDT");
+
     await new Promise((resolve) => setTimeout(resolve, randomDelay));
     performActionAfterInterval();
   } catch (error) {
@@ -92,22 +87,24 @@ async function forNextAction() {
   }
 }
 
-const AdminSet = async(req, res) => {
+const AdminSet = async (req, res) => {
   try {
     const setTimeData = await SetTime.findOne({});
     if (!setTimeData) {
       console.log("No time data found in the database");
       return false;
     }
-    const { firstTime, lastTime, dollarEnd, dollarStart } = setTimeData;
-    const randomDelay = await generateRandomNumberForDollar(dollarEnd, dollarStart);
-    console.log(randomDelay, "Random USDT");
-    process.exit()
+    const { dollarEnd, dollarStart } = setTimeData;
+    const randomDelay = await generateRandomNumberForDollar(
+      dollarEnd,
+      dollarStart
+    );
+    // console.log(randomDelay, "Random USDT");
     return randomDelay;
   } catch (error) {
     console.error("Error fetching time data:", error);
   }
-}
+};
 
 //TODO:- FIRST INITIAL FUNCTION CALL
 async function initialBuy() {
@@ -121,9 +118,9 @@ async function initialBuy() {
   if (stopExecution) return;
   try {
     const randomUsdtDollar = await AdminSet();
-    console.log(randomUsdtDollar, typeof randomUsdtDollar, "randomUsdtDollar");
     // await MainBuy(users[currentIndex],randomUsdtDollar);
-    throw new Error("Error In FIRST")
+        throw new Error("Error In Buy")
+
     currentIndex++;
     currentAction = "sell";
     console.log(
@@ -135,6 +132,15 @@ async function initialBuy() {
     );
     await forNextAction();
   } catch (error) {
+    io.emit("deskError", { data: error.message });
+    const userId= currentIndex+1;
+    const addError = new ErrorModel({
+      userId:userId,
+      accountAddress:error.message,
+      errorAction:currentAction
+    });
+    const data = await addError.save();
+    // console.log(data, "data");
     currentIndex++;
     currentAction = "buy";
     console.log(
@@ -142,10 +148,10 @@ async function initialBuy() {
         `"Initial Buy ERROR"  currentAction:- ${currentAction},currentIndex:- ${currentIndex}, UserId:- ${users[currentIndex].id}`
       )
     );
-    await forNextAction();
+    // await forNextAction();
+    performActionAfterInterval()
   }
 }
-
 
 const performActionAfterInterval = async () => {
   console.log("inside performActionAfterInterval function".rainbow);
@@ -154,32 +160,45 @@ const performActionAfterInterval = async () => {
   const user = users[currentIndex];
   if (currentAction === "buy") {
     try {
-      const randomUsdtDollar = await AdminSet()
-      console.log(randomUsdtDollar, typeof randomUsdtDollar, "randomUsdtDollar");
+      const randomUsdtDollar = await AdminSet();
+      console.log(
+        randomUsdtDollar,
+        typeof randomUsdtDollar,
+        "randomUsdtDollar"
+      );
 
-      process.exit()
-      await MainBuy(users[currentIndex],2);
-      console.log("Buy");
-      currentAction = "sell";
+      // process.exit()
+      await MainBuy(users[currentIndex], 2);
+      // currentAction = "sell";
     } catch (error) {
-      console.log(error.message, "error one ---------");
+      console.log(error.message, "Error in buy After 1st by done ---------");
+      // console.log("------------------------------");
+      io.emit("deskError", { data: error.message });
+      const userId= currentIndex+1;
+      const addError = new ErrorModel({
+        userId:userId,
+        accountAddress:error.message,
+        errorAction:currentAction
+      });
+      const data = await addError.save();
+      console.log(data, "data");
+      process.exit()
       currentAction = "buy";
       // io.emit("deskError", { data: "1" });
     }
   } else {
-    try {
-      console.log("sell s s s s s ss s s s");
-      const sellDeodPrice = await priceFetchForBuy(1);
-      console.log(sellDeodPrice, typeof sellDeodPrice, "Sell Deod Price --sh");
-      await MainSell(users[currentIndex], sellDeodPrice);
-      currentAction = "buy";
-    } catch (error) {
-      console.log(error);
-      console.log(error.message, "error one");
-      console.log("error two", currentAction, currentIndex);
-      currentAction = "sell";
-      // io.emit("assetPurchased", { data: await NotificationCount() });
-    }
+    console.log("sell");
+    process.exit()
+    // try {
+    //   const sellDeodPrice = await priceFetchForBuy(1);
+    //   console.log(sellDeodPrice, typeof sellDeodPrice, "Sell Deod Price --sh");
+    //   await MainSell(users[currentIndex], sellDeodPrice);
+    //   currentAction = "buy";
+    // } catch (error) {
+    //   console.log(error, "Error in sell where");
+    //   currentAction = "sell";
+    //   // io.emit("assetPurchased", { data: await NotificationCount() });
+    // }
   }
   currentIndex++;
   console.log(
@@ -207,7 +226,7 @@ app.post("/api/startBot", (req, res) => {
   if (!isBotRunning) {
     isBotRunning = true;
     stopExecution = false;
-    console.log("Bot started successfully");
+    // console.log("Bot started successfully");
     initialBuy();
     return res.status(200).json({
       status: true,
