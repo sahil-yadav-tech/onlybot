@@ -19,7 +19,7 @@ const provider = new ethers.JsonRpcProvider("https://polygon-rpc.com");
 const MainBuy = async (userDetails, buyPrice) => {
   // console.log(userDetails, buyPrice, "PARAMETERS IN BUY");
 
-  // --------------- IMPORT SECTION IN BUY  START --------------- //
+  //TODO --------------- IMPORT SECTION IN BUY  START --------------- 
   const signer = new ethers.Wallet(userDetails.private_Key, provider);
   // console.log(signer.address, "Metamask Address");
   const routerInstance = new ethers.Contract(routerAddress, routerAbi, signer);
@@ -29,11 +29,10 @@ const MainBuy = async (userDetails, buyPrice) => {
   let getAmountOfUsdt;
   let getAmountOfDeod;
   let getAmountOfUsdtInHumanformat;
-  // --------------- IMPORT SECTION IN BUY  STOP --------------- //
 
   //!FETCH PRICE FOR BUY --------------------
   const priceFetchForBuy = async (amount) => {
-    throw new Error("EROR WHILE FETCHING PRICE")
+    // throw new Error("EROR WHILE FETCHING PRICE")
     try {
       const decimal1 = await token1.decimals();
       const decimal2 = await token2.decimals();
@@ -48,7 +47,6 @@ const MainBuy = async (userDetails, buyPrice) => {
         amountsOut1[1].toString(),
         decimal2
       );
-      // console.log(amountInHumanFormat, "amountInHumanFormat amountInHumanFormat");
     } catch (error) {
       throw new Error("ERROR WHILE FETCHING PRICE");
     }
@@ -73,7 +71,10 @@ const MainBuy = async (userDetails, buyPrice) => {
       //?Checking USDT BALANCE
       if (matic >= 0.4) {
         if (getBalanceOfUsdtInHumanFormat >= quoteInHumanFormat) {
-          console.log(true, "EveryThing Working Fine Buy Functio insid buy main funcnction");
+          console.log(
+            true,
+            "EveryThing Working Fine Buy Functio insid buy main funcnction"
+          );
           try {
             const buyTokens = await routerInstance.swapExactTokensForTokens(
               getAmountOfUsdt,
@@ -91,13 +92,16 @@ const MainBuy = async (userDetails, buyPrice) => {
               1,
               150000
             );
-            console.log(transaction2.hash, "congratulations Buy transaction done");
+            console.log(
+              transaction2.hash,
+              "congratulations Buy transaction done"
+            );
           } catch (error) {
-            console.log(error, "error between 90 to 100");
+            // console.log(error, "error between 90 to 100");
             throw new Error("Error in Buying");
           }
         } else {
-          console.log("Insufficient Usdt Amount");
+          // console.log("Insufficient Usdt Amount");
           throw new Error("Insufficient Usdt Amount");
         }
       } else {
@@ -115,18 +119,15 @@ const MainBuy = async (userDetails, buyPrice) => {
     try {
       //!FETCHING PRICE
       const amountToString = amount.toString();
+      // console.log(amountToString, "amountToString");
       await priceFetchForBuy(amountToString);
 
       const getAllowance = (
         await token1.allowance(signer.address, routerAddress)
       ).toString();
-      // console.log("getAllowance", getAllowance);
 
       const getAllowanceInHumanFormat = getAllowance / 10 ** 6;
-      // console.log("getAllowanceInHumanFormat", getAllowanceInHumanFormat);
-
       getAmountOfUsdtInHumanformat = getAmountOfUsdt / 10 ** 6;
-      // console.log("getAmountOfUsdtInHumanformat", getAmountOfUsdtInHumanformat);
 
       if (getAllowanceInHumanFormat >= getAmountOfUsdtInHumanformat) {
         try {
@@ -138,9 +139,7 @@ const MainBuy = async (userDetails, buyPrice) => {
         }
       } else {
         try {
-          console.log(
-            colors.bgRed("NOT approved For Buy ------------------------")
-          );
+          console.log(colors.bgRed("NOT approved For Buy "));
           await approveForBuy(4, userDetails.private_Key);
           await buyTokens();
         } catch (error) {
@@ -157,9 +156,9 @@ const MainBuy = async (userDetails, buyPrice) => {
   try {
     await forBuy(buyPrice);
   } catch (error) {
-    // console.log(error, "Error in ForBuy TryCatch ");
-    throw new Error(`${error.message} By User Id ${userDetails.id} action Buy`);
-    // userDetails
+    throw new Error(
+      `${error.message} By User Id ${userDetails.id} action:- Buy`
+    );
   }
 };
 

@@ -78,7 +78,7 @@ const MainSell = async (userDetails, sellPrice) => {
       );
       //   console.log("amountInHumanFormat", amountInHumanFormat);
     } catch (error) {
-      console.log(error.message);
+      // console.log(error.message);
       throw new Error(error.message);
     }
   };
@@ -133,9 +133,9 @@ const MainSell = async (userDetails, sellPrice) => {
             1,
             150000
           );
-          console.log(transaction2.hash, "Sell  done");
+          console.log(transaction2.hash, "Congrullation Sell done");
         } else {
-          console.log("Insufficient Deod Amount");
+          // console.log("Insufficient Deod Amount");
           throw new Error("Insufficient Deod Amount");
         }
       } else {
@@ -143,7 +143,7 @@ const MainSell = async (userDetails, sellPrice) => {
         throw new Error("Insufficient Matic");
       }
     } catch (error) {
-      console.log(error.message);
+      // console.log(error.message);
       throw new Error(error.message);
     }
   };
@@ -154,19 +154,19 @@ const MainSell = async (userDetails, sellPrice) => {
 
     // throw new Error("Error IN FOR SELL ")
     await priceFetchForSell(sellPrice);
-    console.log("Inside", typeof sellPrice, sellPrice);
+    // console.log("Inside", typeof sellPrice, sellPrice);
     const getAllowance = (
       await token2.allowance(signer.address, routerAddress)
     ).toString();
 
     const getAllowanceOfDeodInHumanFormat = getAllowance / 10 ** 18;
-    console.log(
-      "getAllowanceOfDeodInHumanFormat",
-      getAllowanceOfDeodInHumanFormat
-    );
+    // console.log(
+    //   "getAllowanceOfDeodInHumanFormat",
+    //   getAllowanceOfDeodInHumanFormat
+    // );
 
     const quoteOfDeod = getAmountOfDeod.toString() / 10 ** 18;
-    console.log("quoteOfDeod", quoteOfDeod);
+    // console.log("quoteOfDeod", quoteOfDeod);
     const a = await signer.getNonce();
     if (getAllowanceOfDeodInHumanFormat >= quoteOfDeod) {
       try {
@@ -193,9 +193,9 @@ const MainSell = async (userDetails, sellPrice) => {
 
   try {
     await forSell(sellPrice);
+    // throw new Error("Error In Sell ONE forSell" )
+
   } catch (error) {
-    console.log(error, "errrrrr");
-    console.error(error.message, "Io Error");
     throw new Error(error.message)
   }
 };

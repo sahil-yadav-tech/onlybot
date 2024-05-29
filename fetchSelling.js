@@ -25,7 +25,7 @@ let getAmountOfDeod;
 let getAmountOfUsdtInHumanformat;
 
 const priceFetchForBuy = async (amount) => {
-  console.log(amount, "amount amount");
+  // console.log(amount, "amount amount");
   // proce
   // throw new Error("EROR WHILE FETCHING PRICE")
   try {
@@ -43,13 +43,13 @@ const priceFetchForBuy = async (amount) => {
       decimal2
     );
    
-    console.log(getAmountOfUsdtInHumanformat, typeof getAmountOfUsdtInHumanformat);
+    // console.log(getAmountOfUsdtInHumanformat, typeof getAmountOfUsdtInHumanformat);
     const deodPriceInNumber = parseFloat(getAmountOfUsdtInHumanformat).toFixed(2)
-    console.log(deodPriceInNumber, typeof deodPriceInNumber, "deodPriceInNumber", deodPriceInNumber.toString());
+    // console.log(deodPriceInNumber, typeof deodPriceInNumber, "deodPriceInNumber", deodPriceInNumber.toString());
     // process.exit()
     return deodPriceInNumber.toString();
   } catch (error) {
-    console.log(error, "error jhjdhdhdhdhdhh");
+    // console.log(error, "error jhjdhdhdhdhdhh");
     throw new Error("ERROR WHILE FETCHING PRICE");
   }
 };

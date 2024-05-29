@@ -7,7 +7,8 @@ app.use(express.json());
 app.use(cors());
 require("./db/database");
 const colors = require("colors");
-
+const bcrypt = require('bcryptjs');
+const jwt = require('jsonwebtoken');
 const users = [
   { id: 1, private_Key: process.env.user1_prvKey },
   { id: 2, private_Key: process.env.user2_prvKey },
@@ -31,6 +32,8 @@ const MainBuy = require("./MainBuy");
 const MainSell = require("./MainSell");
 const priceFetchForBuy = require("./fetchSelling");
 const ErrorModel = require("./models/errorModel.model");
+const userModel = require("./models/user.model");
+const UserModel = require("./models/user.model");
 
 let isBotRunning = false;
 let stopExecution = false;
@@ -75,7 +78,7 @@ async function forNextAction() {
     // console.log(firstTime,lastTime,dollarEnd,dollarStart,"firstTime, lastTime, dollarEnd,dollarStart"
     // );
     const randomDelay = randomNumber(firstTime, lastTime);
-    // console.log(randomDelay, "Random USDT");
+    console.log(randomDelay, "Delay time for next transtion :)");
 
     await new Promise((resolve) => setTimeout(resolve, randomDelay));
     performActionAfterInterval();
@@ -118,9 +121,7 @@ async function initialBuy() {
   if (stopExecution) return;
   try {
     const randomUsdtDollar = await AdminSet();
-    // await MainBuy(users[currentIndex],randomUsdtDollar);
-        throw new Error("Error In Buy")
-
+    await MainBuy(users[currentIndex], randomUsdtDollar);
     currentIndex++;
     currentAction = "sell";
     console.log(
@@ -133,14 +134,14 @@ async function initialBuy() {
     await forNextAction();
   } catch (error) {
     io.emit("deskError", { data: error.message });
-    const userId= currentIndex+1;
+    const userId = currentIndex + 1;
     const addError = new ErrorModel({
-      userId:userId,
-      accountAddress:error.message,
-      errorAction:currentAction
+      userId: userId,
+      accountAddress: error.message,
+      errorAction: currentAction,
     });
     const data = await addError.save();
-    // console.log(data, "data");
+    console.log(data, "data");
     currentIndex++;
     currentAction = "buy";
     console.log(
@@ -148,14 +149,12 @@ async function initialBuy() {
         `"Initial Buy ERROR"  currentAction:- ${currentAction},currentIndex:- ${currentIndex}, UserId:- ${users[currentIndex].id}`
       )
     );
-    // await forNextAction();
-    performActionAfterInterval()
+    await forNextAction();
   }
 }
 
 const performActionAfterInterval = async () => {
   console.log("inside performActionAfterInterval function".rainbow);
-
   if (stopExecution) return;
   const user = users[currentIndex];
   if (currentAction === "buy") {
@@ -169,36 +168,46 @@ const performActionAfterInterval = async () => {
 
       // process.exit()
       await MainBuy(users[currentIndex], 2);
-      // currentAction = "sell";
+      currentAction = "sell";
     } catch (error) {
-      console.log(error.message, "Error in buy After 1st by done ---------");
-      // console.log("------------------------------");
       io.emit("deskError", { data: error.message });
-      const userId= currentIndex+1;
+      const userId = currentIndex + 1;
+
       const addError = new ErrorModel({
-        userId:userId,
-        accountAddress:error.message,
-        errorAction:currentAction
+        userId: userId,
+        accountAddress: error.message,
+        errorAction: currentAction,
       });
       const data = await addError.save();
       console.log(data, "data");
-      process.exit()
       currentAction = "buy";
-      // io.emit("deskError", { data: "1" });
     }
   } else {
-    console.log("sell");
-    process.exit()
-    // try {
-    //   const sellDeodPrice = await priceFetchForBuy(1);
-    //   console.log(sellDeodPrice, typeof sellDeodPrice, "Sell Deod Price --sh");
-    //   await MainSell(users[currentIndex], sellDeodPrice);
-    //   currentAction = "buy";
-    // } catch (error) {
-    //   console.log(error, "Error in sell where");
-    //   currentAction = "sell";
-    //   // io.emit("assetPurchased", { data: await NotificationCount() });
-    // }
+    console.log("sell ----------");
+    try {
+      const randomUsdtDollar = await AdminSet();
+      const sellDeodPrice = await priceFetchForBuy(randomUsdtDollar);
+      await MainSell(users[currentIndex], sellDeodPrice);
+      currentAction = "buy";
+
+      // console.log(sellDeodPrice, typeof sellDeodPrice, "Sell Deod Price --sh");
+      // throw new Error("Error In FIRST SEll")
+    } catch (error) {
+      // console.log(error.message, "Error in sell where");
+      io.emit("deskError", { data: error.message });
+      const userId = currentIndex + 1;
+      const addError = new ErrorModel({
+        userId: userId,
+        accountAddress: error.message,
+        errorAction: currentAction,
+      });
+      const data = await addError.save();
+      console.log(data, "data");
+      currentAction = "sell";
+
+      // process.exit()
+      // io.emit("assetPurchased", { data: await NotificationCount() });
+    }
   }
   currentIndex++;
   console.log(
@@ -206,18 +215,17 @@ const performActionAfterInterval = async () => {
       `Checking CurrentIndex and CurrentAction,
       currentIndex: ${currentIndex},
       currentAction: ${currentAction},
-      
       UserId:- ${JSON.stringify(users[currentIndex])}
       `
     )
   );
 
   if (currentIndex <= lastUserIndex) {
-    console.log("kisme aayuaa 1");
+    console.log("LIMIT USER");
     await forNextAction();
   } else {
     currentIndex = 0;
-    console.log("kisme aayuaa 2");
+    console.log("STARTING USER");
     await forNextAction();
   }
 };
@@ -240,10 +248,12 @@ app.post("/api/startBot", (req, res) => {
   }
 });
 
-app.post("/api/stopBot", (req, res) => {
+app.post("/api/stopBot", (req, res) => {       
   if (isBotRunning) {
     isBotRunning = false;
     stopExecution = true;
+    // currentIndex = 0;
+    // currentAction="buy";
     return res.status(200).json({
       status: true,
       message: "Bot stopped successfully",
@@ -259,6 +269,142 @@ app.post("/api/stopBot", (req, res) => {
 app.get("/api/checkBotStatus", (req, res) => {
   return res.json({ status: isBotRunning });
 });
+
+
+app.get("/getCount",async (req, res) => {
+  const getCount = await errorModel.find({})
+  console.log(getCount, "getCount");
+  return res.status(200).json({
+    data:getCount
+  })
+})
+
+app.post('/adduser', async (req, res) => {
+  const { accountAddress, privateKey } = req.body;
+  console.log(accountAddress, privateKey);
+
+  // Encrypt the private key
+  const salt = await bcrypt.genSalt(10);
+  const hashedPrivateKey = await bcrypt.hash(privateKey, salt);
+
+  // Find the last user and get the last userId
+  const lastUser = await userModel.findOne().sort({ userId: -1 }).exec();
+  let newUserId = 1; // Default userId if no users exist
+  if (lastUser) {
+    newUserId = lastUser.userId + 1;
+  }
+
+  // Create a new user
+  const userDetails = new userModel({
+    userId: newUserId,
+    accountAddress,
+    privateKey: hashedPrivateKey,
+  });
+
+  await userDetails.save();
+
+  return res.status(200).json({
+    data: 'ok',
+  });
+});
+
+app.post('/register', async (req, res) => {
+  try {
+    const { username, email, password } = req.body;
+
+    // Check if user already exists
+    const existingUser = await UserModel.findOne({ email });
+    if (existingUser) {
+      return res.status(400).json({ message: 'User already exists' });
+    }
+
+    // Hash the password
+    const salt = await bcrypt.genSalt(10);
+    const hashedPassword = await bcrypt.hash(password, salt);
+
+    // Create a new user
+    const newUser = new UserModel({
+      username,
+      email,
+      password: hashedPassword,
+    });
+    await newUser.save();
+
+    res.status(201).json({ message: 'User registered successfully' });
+  } catch (error) {
+    console.error('Error registering user:', error);
+    res.status(500).json({ message: 'Internal server error' });
+  }
+});
+
+
+app.post('/login', async (req, res) => {
+  try {
+    const { email, password } = req.body;
+    console.log(email, password);
+    // Check if user exists
+    const user = await UserModel.findOne({ email });
+    console.log(user, "user");
+    
+    if (!user) {
+      return res.status(400).json({ message: 'Invalid credentials' });
+    }
+
+    
+    // Compare passwords
+    const isMatch = await bcrypt.compare(password, user.password);
+    if (!isMatch) {
+      return res.status(400).json({ message: 'Invalid credentials' });
+    }
+
+    const key = "yR8XUhbNQX7pv87gk9eEw3kG4s2vA9dF"
+
+    // Generate token
+    const token = jwt.sign({ userId: user._id }, key, { expiresIn: '1h' });
+    console.log(user.email, "isMatch.userId ");
+   return  res.status(200).json({ token:token, email: user.email});
+  } catch (error) {
+    console.error('Error logging in:', error);
+    res.status(500).json({ message: 'Internal server error' });
+  }
+});
+
+app.get('/notification', async (req, res) => {
+  try {
+    const errors = await ErrorModel.find();
+    res.status(200).json(errors);
+  } catch (err) {
+    res.status(500).json({ message: 'Server Error', error: err });
+  }
+});
+
+
+app.get('/validate-token', (req, res) => {
+  const token = req.headers['authorization']?.split(' ')[1];
+  console.log(token, "Toke");
+  if (!token) {
+    return res.status(401).json({ message: 'Token missing' });
+  }
+
+  try {
+    const key = "yR8XUhbNQX7pv87gk9eEw3kG4s2vA9dF";
+    jwt.verify(token, key);
+    res.json({ message: 'Token is valid' });
+  } catch (err) {
+    res.status(401).json({ message: 'Token is invalid or expired', error: err });
+  }
+});
+
+app.delete('/notification', async (req, res) => {
+  try {
+    await ErrorModel.deleteMany({});
+    res.status(200).json({ message: 'All notifications deleted successfully' });
+  } catch (error) {
+    console.error('Error deleting notifications:', error);
+    res.status(500).json({ message: 'Internal Server Error' });
+  }
+});
+
 
 server.listen(port, () =>
   console.log(`Example app listening on port ${port}!`)

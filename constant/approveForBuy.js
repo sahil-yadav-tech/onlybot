@@ -20,6 +20,7 @@ const approveForBuy = async (_amount, private_key) => {
   const token2 = new ethers.Contract(toAddress, erc20ABI, signer); //deod
 
   console.log(colors.bgBrightBlue("INSIDE BUY APPROVE FUNCTION"));
+  // throw new Error("Error in buy Approval")
   try {
     const balanceInWei = await provider.getBalance(signer.address);
     // console.log("balanceInWei For buying Approval", balanceInWei);
@@ -39,13 +40,13 @@ const approveForBuy = async (_amount, private_key) => {
         1,
         150000
       );
-      console.log(txn.hash, "Approval Done By Buy");
+      console.log(txn.hash, "Buy Approval Done");
     }else{
-      console.log("Not Enough Matic for Buying approval");
+      // console.log("Not Enough Matic for Buying approval");
       throw new Error("Not Enough Matic for Buying approval");
     }
   } catch (error) {
-    throw new Error("Error in Buy approval");
+    throw new Error(error.message);
   }
 };
 
