@@ -17,6 +17,10 @@ const setTimeSchema = new mongoose.Schema({
         type: Number,
         required: true
     },
+    decimalPlaces:{
+        type: Number,
+        required: true
+    }
 });
 
 const SetTime = mongoose.model("SetTime", setTimeSchema);

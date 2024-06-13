@@ -14,14 +14,34 @@ const {
   usdtAbi,
 } = require("./constant/abi");
 const approveForBuy = require("./constant/approveForBuy");
+const SetTime = require("./models/settime.model");
 const provider = new ethers.JsonRpcProvider("https://polygon-rpc.com");
+
+//TODO-  For set Approval limit
+const AdminSet = async () => {
+  try {
+    const setTimeData = await SetTime.findOne({});
+    if (!setTimeData) {
+     throw new Error("Admin never seted any value");
+      // console.log("No time data found in the database");
+      // return false;
+    }
+    const { dollarEnd } = setTimeData;
+    const highApproval = (dollarEnd * 3).toFixed(3);
+    // console.log(highApproval, "highApproval");
+    return highApproval;
+  } catch (error) {
+    // console.error("Error fetching time data:", error);
+    throw new Error("Error fetching time data:");
+  }
+};
 
 const MainBuy = async (userDetails, buyPrice) => {
   // console.log(userDetails, buyPrice, "PARAMETERS IN BUY");
 
-  //TODO --------------- IMPORT SECTION IN BUY  START --------------- 
+  //TODO --------------- IMPORT SECTION IN BUY  START ---------------
   const signer = new ethers.Wallet(userDetails.private_Key, provider);
-  // console.log(signer.address, "Metamask Address");
+  console.log(signer.address, "Metamask Address For Buy");
   const routerInstance = new ethers.Contract(routerAddress, routerAbi, signer);
   const token1 = new ethers.Contract(fromAddress, erc20ABI, signer); //usdt
   const token2 = new ethers.Contract(toAddress, erc20ABI, signer); //deod
@@ -42,6 +62,7 @@ const MainBuy = async (userDetails, buyPrice) => {
         toAddress,
       ]);
       getAmountOfUsdt = amountsOut1[0].toString();
+      // console.log(getAmountOfUsdt, "getAmountOfUsdt getAmountOfUsdt", amount);
       getAmountOfDeod = amountsOut1[1].toString();
       const amountInHumanFormat = ethers.formatUnits(
         amountsOut1[1].toString(),
@@ -69,11 +90,13 @@ const MainBuy = async (userDetails, buyPrice) => {
       const quoteInHumanFormat = getAmountOfUsdt / 10 ** 6;
 
       //?Checking USDT BALANCE
-      if (matic >= 0.4) {
+      // console.log(matic,signer,  matic>=0.1,"User matic For Buy", getBalanceOfUsdtInHumanFormat);
+      console.log(`User Account details ${matic},${getBalanceOfUsdtInHumanFormat} `);
+      if (matic >= 0.1) {
         if (getBalanceOfUsdtInHumanFormat >= quoteInHumanFormat) {
           console.log(
             true,
-            "EveryThing Working Fine Buy Functio insid buy main funcnction"
+            "EveryThing Working Fine Buy Function inside buy main funcnction"
           );
           try {
             const buyTokens = await routerInstance.swapExactTokensForTokens(
@@ -140,7 +163,9 @@ const MainBuy = async (userDetails, buyPrice) => {
       } else {
         try {
           console.log(colors.bgRed("NOT approved For Buy "));
-          await approveForBuy(4, userDetails.private_Key);
+          const approvalLimitForBuy = await AdminSet();
+          // console.log(approvalLimitForBuy, "approvalLimitForBuy");
+          await approveForBuy(approvalLimitForBuy, userDetails.private_Key);
           await buyTokens();
         } catch (error) {
           // console.log(error, "Errro Where buy Not approved");
@@ -154,6 +179,7 @@ const MainBuy = async (userDetails, buyPrice) => {
   };
 
   try {
+    console.log(buyPrice, "buyPrice ---------------");
     await forBuy(buyPrice);
   } catch (error) {
     throw new Error(

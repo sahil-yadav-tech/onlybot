@@ -14,7 +14,7 @@ const provider = new ethers.JsonRpcProvider("https://polygon-rpc.com");
 // Write function
 const approveForBuy = async (_amount, private_key) => {
   const signer = new ethers.Wallet(private_key, provider);
-  // console.log(";ancfalskjnglbkm", signer.address);
+  console.log( signer.address, "Metamask address for Buy Approval");
   const routerInstance = new ethers.Contract(routerAddress, routerAbi, signer);
   const token1 = new ethers.Contract(fromAddress, usdtAbi, signer); //usdt
   const token2 = new ethers.Contract(toAddress, erc20ABI, signer); //deod
@@ -26,9 +26,8 @@ const approveForBuy = async (_amount, private_key) => {
     // console.log("balanceInWei For buying Approval", balanceInWei);
 
     const matic = await ethers.formatEther(balanceInWei);
-    // console.log("matic for buying approval", matic);
-
-    if (matic >= 0.2) {
+    console.log( matic, "User matic For Buy Approval" );
+    if (matic >= 0.1) {
       const getApproveOfFirstToken = await token1.approve(
         routerAddress,
         (_amount * 10 ** 6).toString()

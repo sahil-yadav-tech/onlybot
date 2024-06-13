@@ -17,16 +17,16 @@ const {
 } = require("./constant/abi");
 
 const approveForSell = require("./constant/approveForSell");
+const SetTime = require("./models/settime.model");
 const provider = new ethers.JsonRpcProvider("https://polygon-rpc.com");
+
 
 const MainSell = async (userDetails, sellPrice) => {
   // console.log(userDetails, sellPrice, "userDetails, sellPric");
   //!PRIVATE KEY
-  // const prv_key =
-  // "32e6767e9f60c6ffa36bb825c25ebe75b8ecd9d0a29eb6bf3221c112d68733a0";
   //!METAMASK ADDRESS
   const signer = new ethers.Wallet(userDetails.private_Key, provider);
-  // console.log(";ancfalskjnglbkm", signer.address);
+  console.log( signer.address,"Metamask Address for sell");
 
   const factoryInstance = new ethers.Contract(
     factoryAddress,
@@ -46,12 +46,10 @@ const MainSell = async (userDetails, sellPrice) => {
   const priceFetchForSell = async (amount) => {
     try {
       // throw new Error("Error In PRICE FETCHING")
-
       const balanceInWei = await provider.getBalance(signer.address);
       // console.log("balanceInWei", balanceInWei);
 
       const matic = await ethers.formatEther(balanceInWei);
-      console.log("matic", matic);
 
       const decimal1 = await token1.decimals();
       const decimal2 = await token2.decimals();
@@ -67,6 +65,7 @@ const MainSell = async (userDetails, sellPrice) => {
 
       console.log("amountsOut1", amountsOut1);
       getAmountOfDeod = amountsOut1[0].toString();
+      
       // console.log("getAmountOfDeod", getAmountOfDeod);
 
       getAmountOfUsdt = amountsOut1[1].toString();
@@ -107,8 +106,10 @@ const MainSell = async (userDetails, sellPrice) => {
       // console.log("balanceInWei", balanceInWei);
 
       const matic = await ethers.formatEther(balanceInWei);
-      // console.log("matic", matic);
-      if (matic >= 0.4) {
+      // console.log( matic,signer, matic >= 0.1, "User matic For Sell" );
+      console.log(`User Account details ${matic},${getBalanceOfDeodInhumanFormat}`);
+
+      if (matic >= 0.1) {
         if (getBalanceOfDeodInhumanFormat >= quoteOfDeodInHumanFormat) {
           // console.log(true);
 
@@ -139,7 +140,7 @@ const MainSell = async (userDetails, sellPrice) => {
           throw new Error("Insufficient Deod Amount");
         }
       } else {
-        console.log("Insufficient Matic");
+        // console.log("Insufficient Matic");
         throw new Error("Insufficient Matic");
       }
     } catch (error) {
@@ -182,7 +183,9 @@ const MainSell = async (userDetails, sellPrice) => {
         console.log(
           colors.bgRed("NOT approved For Sell ------------------------")
         );
-        await approveForSell(userDetails, 180);
+        const amountForApprovalSell = (getAmountOfDeod / 10 ** 18) * 10;
+        // console.log(amountForApprovalSell,"amountForApprovalSell");
+        await approveForSell(userDetails, amountForApprovalSell);
         await sellTokens();
       } catch (error) {
         console.log(error.message);
@@ -192,11 +195,11 @@ const MainSell = async (userDetails, sellPrice) => {
   };
 
   try {
+    console.log(sellPrice, "sellPrice ---------------");
     await forSell(sellPrice);
     // throw new Error("Error In Sell ONE forSell" )
-
   } catch (error) {
-    throw new Error(error.message)
+    throw new Error(error.message);
   }
 };
 

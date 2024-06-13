@@ -13,7 +13,7 @@ const users = [
   { id: 1, private_Key: process.env.user1_prvKey },
   { id: 2, private_Key: process.env.user2_prvKey },
   { id: 3, private_Key: process.env.user3_prvKey },
-  { id: 4, private_Key: process.env.user4_prvKey },
+  // { id: 4, private_Key: process.env.user4_prvKey },
 ];
 
 const http = require("http");
@@ -47,9 +47,15 @@ function randomNumber(min, max) {
   const delay = delayNumber * 1000 * 60;
   return delay;
 }
+//TODO:- Dollar Random 
+// const generateRandomNumberForDollar = (min, max) => {
+//   return Math.floor(Math.random() * (max - min + 1)) + min;
+// };
 
-const generateRandomNumberForDollar = (min, max) => {
-  return Math.floor(Math.random() * (max - min + 1)) + min;
+const generateRandomNumberForDollar = (min, max, decimalPlaces) => {
+  const factor = Math.pow(10, decimalPlaces);
+  const randomNum = Math.random() * (max - min) + min;
+  return Math.floor(randomNum * factor) / factor;
 };
 
 //TODO:-  IO MIDDLEWARE
@@ -63,18 +69,18 @@ async function forNextAction() {
   if (stopExecution) return;
   console.log(
     colors.bgBrightMagenta(
-      `I am INSIDE forNextAction Function"  currentAction:- ${currentAction},currentIndex:- ${currentIndex}, UserId:- ${JSON.stringify(
-        users[currentIndex]
-      )}`
+      `I am INSIDE forNextAction Function"  currentAction:- ${currentAction},currentIndex:- ${currentIndex},`
     )
   );
+  // UserDetails:- ${JSON.stringify(users[currentIndex].userId,)}
   try {
     const setTimeData = await SetTime.findOne({});
     if (!setTimeData) {
-      console.log("No time data found in the database");
-      return false;
+      throw new Error("User Not seted any paramters")
+      // console.log("No time data found in the database");
+      // return false;
     }
-    const { firstTime, lastTime, dollarEnd, dollarStart } = setTimeData;
+    const { firstTime, lastTime, } = setTimeData;
     // console.log(firstTime,lastTime,dollarEnd,dollarStart,"firstTime, lastTime, dollarEnd,dollarStart"
     // );
     const randomDelay = randomNumber(firstTime, lastTime);
@@ -83,10 +89,11 @@ async function forNextAction() {
     await new Promise((resolve) => setTimeout(resolve, randomDelay));
     performActionAfterInterval();
   } catch (error) {
-    console.error("Error fetching time data:", error);
-    return res.status(500).json({
-      message: "Internal Error Plesae Contact",
-    });
+    throw new Error("error While getting time from Database")
+    // console.error("Error fetching time data:", error);
+    // return res.status(500).json({
+    //   message: "Internal Error Plesae Contact",
+    // });
   }
 }
 
@@ -94,18 +101,20 @@ const AdminSet = async (req, res) => {
   try {
     const setTimeData = await SetTime.findOne({});
     if (!setTimeData) {
-      console.log("No time data found in the database");
-      return false;
+      // console.log("No time data found in the database");
+     throw new Error("Admin never seted any value");
     }
-    const { dollarEnd, dollarStart } = setTimeData;
+    const { dollarEnd, dollarStart, decimalPlaces } = setTimeData;
+    // console.log(dollarEnd, dollarStart, "dollarEnd, dollarStart");
     const randomDelay = await generateRandomNumberForDollar(
       dollarEnd,
-      dollarStart
+      dollarStart,
+      decimalPlaces
     );
-    // console.log(randomDelay, "Random USDT");
     return randomDelay;
   } catch (error) {
-    console.error("Error fetching time data:", error);
+    // console.error("Error fetching time data:", error);
+    throw new Error("Error fetching time data:")
   }
 };
 
@@ -113,9 +122,7 @@ const AdminSet = async (req, res) => {
 async function initialBuy() {
   console.log(
     colors.bgBrightBlue(
-      `"Initial Buy"  currentAction:- ${currentAction},currentIndex:- ${currentIndex}, UserId:- ${JSON.stringify(
-        users[currentIndex]
-      )}`
+      `"Initial Buy"  currentAction:- ${currentAction},currentIndex:- ${currentIndex}, `
     )
   );
   if (stopExecution) return;
@@ -126,11 +133,10 @@ async function initialBuy() {
     currentAction = "sell";
     console.log(
       colors.bgGreen(
-        `"Initial Buy SUCESS" currentAction:- ${currentAction},currentIndex:- ${currentIndex}, UserId:- ${JSON.stringify(
-          users[currentIndex]
-        )}`
+        `"Initial Buy SUCESS" currentAction:- ${currentAction},currentIndex:- ${currentIndex},`
       )
     );
+    // UserId:- ${JSON.stringify(users[currentIndex])}
     await forNextAction();
   } catch (error) {
     io.emit("deskError", { data: error.message });
@@ -146,7 +152,7 @@ async function initialBuy() {
     currentAction = "buy";
     console.log(
       colors.bgRed(
-        `"Initial Buy ERROR"  currentAction:- ${currentAction},currentIndex:- ${currentIndex}, UserId:- ${users[currentIndex].id}`
+        `"Initial Buy ERROR"  currentAction:- ${currentAction},currentIndex:- ${currentIndex}}`
       )
     );
     await forNextAction();
@@ -154,20 +160,19 @@ async function initialBuy() {
 }
 
 const performActionAfterInterval = async () => {
-  console.log("inside performActionAfterInterval function".rainbow);
+  // console.log("inside performActionAfterInterval function".rainbow);
   if (stopExecution) return;
   const user = users[currentIndex];
   if (currentAction === "buy") {
     try {
       const randomUsdtDollar = await AdminSet();
-      console.log(
-        randomUsdtDollar,
-        typeof randomUsdtDollar,
-        "randomUsdtDollar"
-      );
+      // console.log(
+      //   randomUsdtDollar,
+      //   typeof randomUsdtDollar,
+      //   "randomUsdtDollar"
+      // );
 
-      // process.exit()
-      await MainBuy(users[currentIndex], 2);
+      await MainBuy(users[currentIndex], randomUsdtDollar);
       currentAction = "sell";
     } catch (error) {
       io.emit("deskError", { data: error.message });
@@ -183,10 +188,11 @@ const performActionAfterInterval = async () => {
       currentAction = "buy";
     }
   } else {
-    console.log("sell ----------");
+    console.log("Sell Function process....");
     try {
       const randomUsdtDollar = await AdminSet();
       const sellDeodPrice = await priceFetchForBuy(randomUsdtDollar);
+      // console.log(sellDeodPrice, "Mai sell price");
       await MainSell(users[currentIndex], sellDeodPrice);
       currentAction = "buy";
 
@@ -215,17 +221,17 @@ const performActionAfterInterval = async () => {
       `Checking CurrentIndex and CurrentAction,
       currentIndex: ${currentIndex},
       currentAction: ${currentAction},
-      UserId:- ${JSON.stringify(users[currentIndex])}
       `
+      // UserId:- ${JSON.stringify(users[currentIndex])}
     )
   );
 
   if (currentIndex <= lastUserIndex) {
-    console.log("LIMIT USER");
+    // console.log("LIMIT USER");
     await forNextAction();
   } else {
     currentIndex = 0;
-    console.log("STARTING USER");
+    // console.log("STARTING USER");
     await forNextAction();
   }
 };
@@ -273,45 +279,16 @@ app.get("/api/checkBotStatus", (req, res) => {
 
 app.get("/getCount",async (req, res) => {
   const getCount = await errorModel.find({})
-  console.log(getCount, "getCount");
+  // console.log(getCount, "getCount");
   return res.status(200).json({
     data:getCount
   })
 })
 
-app.post('/adduser', async (req, res) => {
-  const { accountAddress, privateKey } = req.body;
-  console.log(accountAddress, privateKey);
-
-  // Encrypt the private key
-  const salt = await bcrypt.genSalt(10);
-  const hashedPrivateKey = await bcrypt.hash(privateKey, salt);
-
-  // Find the last user and get the last userId
-  const lastUser = await userModel.findOne().sort({ userId: -1 }).exec();
-  let newUserId = 1; // Default userId if no users exist
-  if (lastUser) {
-    newUserId = lastUser.userId + 1;
-  }
-
-  // Create a new user
-  const userDetails = new userModel({
-    userId: newUserId,
-    accountAddress,
-    privateKey: hashedPrivateKey,
-  });
-
-  await userDetails.save();
-
-  return res.status(200).json({
-    data: 'ok',
-  });
-});
 
 app.post('/register', async (req, res) => {
   try {
     const { username, email, password } = req.body;
-
     // Check if user already exists
     const existingUser = await UserModel.findOne({ email });
     if (existingUser) {
@@ -338,18 +315,14 @@ app.post('/register', async (req, res) => {
 });
 
 
-app.post('/login', async (req, res) => {
+app.post('/api/login', async (req, res) => {
   try {
     const { email, password } = req.body;
-    console.log(email, password);
-    // Check if user exists
-    const user = await UserModel.findOne({ email });
-    console.log(user, "user");
+    const user = await UserModel.findOne({ email });// console.log(user, "user");
     
     if (!user) {
       return res.status(400).json({ message: 'Invalid credentials' });
     }
-
     
     // Compare passwords
     const isMatch = await bcrypt.compare(password, user.password);
@@ -357,19 +330,19 @@ app.post('/login', async (req, res) => {
       return res.status(400).json({ message: 'Invalid credentials' });
     }
 
-    const key = "yR8XUhbNQX7pv87gk9eEw3kG4s2vA9dF"
+    const key = process.env.tokenKey;
 
     // Generate token
-    const token = jwt.sign({ userId: user._id }, key, { expiresIn: '1h' });
-    console.log(user.email, "isMatch.userId ");
+    const token = jwt.sign({ userId: user._id }, key, { expiresIn: '1y' });
+    // console.log(user.email, "isMatch.userId ");
    return  res.status(200).json({ token:token, email: user.email});
   } catch (error) {
-    console.error('Error logging in:', error);
+    // console.error('Error logging in:', error);
     res.status(500).json({ message: 'Internal server error' });
   }
 });
 
-app.get('/notification', async (req, res) => {
+app.get('/api/notification', async (req, res) => {
   try {
     const errors = await ErrorModel.find();
     res.status(200).json(errors);
@@ -379,15 +352,15 @@ app.get('/notification', async (req, res) => {
 });
 
 
-app.get('/validate-token', (req, res) => {
+app.get('/api/validate-token', (req, res) => {
   const token = req.headers['authorization']?.split(' ')[1];
-  console.log(token, "Toke");
+  // console.log(token, "Toke");
   if (!token) {
     return res.status(401).json({ message: 'Token missing' });
   }
 
   try {
-    const key = "yR8XUhbNQX7pv87gk9eEw3kG4s2vA9dF";
+    const key = process.env.tokenKey;
     jwt.verify(token, key);
     res.json({ message: 'Token is valid' });
   } catch (err) {
@@ -395,7 +368,7 @@ app.get('/validate-token', (req, res) => {
   }
 });
 
-app.delete('/notification', async (req, res) => {
+app.delete('/api/notification', async (req, res) => {
   try {
     await ErrorModel.deleteMany({});
     res.status(200).json({ message: 'All notifications deleted successfully' });
@@ -405,15 +378,28 @@ app.delete('/notification', async (req, res) => {
   }
 });
 
+app.get("/api/getAllparameters", async (req, res) => {
+  try {
+    const parameters = await SetTime.find();
+    return res.status(200).json({message:"setted parameters",parameters})
+  } catch (error) {
+    res.status(500).json({ message: "Server Error", error });
+  }
+});
+
+
 
 server.listen(port, () =>
   console.log(`Example app listening on port ${port}!`)
 );
 
 io.on("connection", (socket) => {
-  console.log("a user connected node");
+  // console.log("a user connected node");
 
   socket.on("disconnect", function () {
-    console.log("A user disconnected");
+    // console.log("A user disconnected");
   });
 });
+
+
+

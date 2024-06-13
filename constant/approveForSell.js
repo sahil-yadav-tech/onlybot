@@ -17,7 +17,7 @@ const approveForSell = async (userDetails, _amount) => {
   try {
     const prv_key = userDetails.private_Key;
     const signer = new ethers.Wallet(prv_key, provider);
-    // console.log(";ancfalskjnglbkm", signer.address);
+    console.log(signer.address, "Metamask address for Sell Approval");
     //  throw new Error("Eoor in Appproval IN SELL");
     const routerInstance = new ethers.Contract(
       routerAddress,
@@ -36,24 +36,32 @@ const approveForSell = async (userDetails, _amount) => {
 
     const matic = await ethers.formatEther(balanceInWei);
     // console.log("matic for buying approval", matic);
-
-    if (matic >= 0.2) {
+    // console.log(_amount * 10 ** 18, );
+    // console.log(BigInt(_amount * 10 ** 18,));
+    // console.log(200*10**18);
+    //     process.exit()
+    console.log( matic,"User matic For Sell Approval" );
+    if (matic >= 0.1) {
+      // Convert _amount to its equivalent in Wei using parseUnits
+      const tokenDecimals = await token2.decimals();
+      const amountInWei = ethers.parseUnits(_amount.toString(), tokenDecimals);
+      //  console.log(tokenDecimals, amountInWei, "what -------------");
       const getApproveOfSecondToken = await token2.approve(
         routerAddress,
-        (_amount * 10 ** 18).toString()
+        amountInWei
       );
       const txn1 = await provider.waitForTransaction(
         getApproveOfSecondToken.hash,
         1,
         150000
       );
-      console.log(txn1.hash, "Sell aproval done");
+      console.log(txn1.hash, "Sell approval done");
     } else {
-      console.log("Not Enough Matic for Selling approval");
+      // console.log("Not Enough Matic for Selling approval");
       throw new Error("Not Enough Matic for Selling approval");
     }
   } catch (error) {
-    console.log(error, "error In APPROVAL");
+    // console.log(error, "error In APPROVAL");
     throw new Error(
       `error In APPROVAL, Please matic! BY USERID ${userDetails.id} `
     );
