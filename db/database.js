@@ -1,6 +1,5 @@
 const mongoose = require('mongoose');
 mongoose.set('strictQuery', true);
-// # DATABASE_URI=mongodb+srv://SahilYadav:FRpXBwWfEZ7dulNu@cluster0.tn4ng8u.mongodb.net/Stake
 // const DB="mongodb://localhost:27017/Next"
 const DB = process.env.database;
 mongoose
