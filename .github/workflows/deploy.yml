@@ -1,4 +1,4 @@
-name: "chat-backend"
+name: Deploy Chat Backend
 
 on:
   push:
@@ -21,7 +21,8 @@ jobs:
 
       - name: Build Docker Image
         run: |
-          docker build -t ${{ secrets.DOCKER_USERNAME }}/chat-backend:latest .
+          # Build from backend folder where Dockerfile exists
+          docker build -t ${{ secrets.DOCKER_USERNAME }}/chat-backend:latest ./backend
 
       - name: Push Docker Image
         run: |
@@ -34,12 +35,33 @@ jobs:
           username: ubuntu
           key: ${{ secrets.EC2_SSH_KEY }}
           script: |
+            # Pull latest image
             sudo docker pull ${{ secrets.DOCKER_USERNAME }}/chat-backend:latest
+            
+            # Stop and remove old container
             sudo docker stop chat-backend || true
             sudo docker rm chat-backend || true
+            
+            # Run new container with environment variables
             sudo docker run -d \
               --restart unless-stopped \
               --name chat-backend \
               -p 1111:1111 \
+              --env-file /home/ubuntu/.env \
               ${{ secrets.DOCKER_USERNAME }}/chat-backend:latest
-            echo "✅ Deployment done"
+            
+            # Wait for container to start
+            sleep 5
+            
+            # Check if container is running
+            if [ "$(sudo docker ps -q -f name=chat-backend)" ]; then
+              echo "✅ Deployment successful - Container is running"
+            else
+              echo "❌ Container failed to start - showing logs:"
+              sudo docker logs chat-backend --tail 50
+              exit 1
+            fi
+
+      - name: Verify Deployment
+        run: |
+          echo "🎉 Deployment workflow completed!"
