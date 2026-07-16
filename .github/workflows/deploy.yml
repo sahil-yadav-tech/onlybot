@@ -37,4 +37,9 @@ jobs:
             sudo docker pull ${{ secrets.DOCKER_USERNAME }}/chat-backend:latest
             sudo docker stop chat-backend || true
             sudo docker rm chat-backend || true
-            sudo docker run -d --name chat-backend -p 3000:3000 ${{ secrets.DOCKER_USERNAME }}/chat-backend:latest
+            sudo docker run -d \
+              --restart unless-stopped \
+              --name chat-backend \
+              -p 1111:1111 \
+              ${{ secrets.DOCKER_USERNAME }}/chat-backend:latest
+            echo "✅ Deployment done"
