@@ -1,3 +1,72 @@
+# name: Deploy Chat Backend
+
+# on:
+#   push:
+#     branches:
+#       - main
+
+# jobs:
+#   deploy:
+#     runs-on: ubuntu-latest
+
+#     steps:
+#       - name: Checkout Code
+#         uses: actions/checkout@v4
+
+#       - name: Docker Login
+#         uses: docker/login-action@v3
+#         with:
+#           username: ${{ secrets.DOCKER_USERNAME }}
+#           password: ${{ secrets.DOCKER_TOKEN }}
+
+#       - name: Build Docker Image
+#         run: |
+#           # Build from backend folder where Dockerfile exists
+#           docker build -t ${{ secrets.DOCKER_USERNAME }}/chat-backend:latest .
+
+#       - name: Push Docker Image
+#         run: |
+#           docker push ${{ secrets.DOCKER_USERNAME }}/chat-backend:latest
+
+#       - name: Deploy To EC2
+#         uses: appleboy/ssh-action@v1.2.0
+#         with:
+#           host: ${{ secrets.EC2_HOST }}
+#           username: ubuntu
+#           key: ${{ secrets.EC2_SSH_KEY }}
+#           script: |
+#             # Pull latest image
+#             sudo docker pull ${{ secrets.DOCKER_USERNAME }}/chat-backend:latest
+            
+#             # Stop and remove old container
+#             sudo docker stop chat-backend || true
+#             sudo docker rm chat-backend || true
+            
+#             # Run new container with environment variables
+#             sudo docker run -d \
+#               --restart unless-stopped \
+#               --name chat-backend \
+#               -p 1111:1111 \
+#               --env-file /home/ubuntu/.env \
+#               ${{ secrets.DOCKER_USERNAME }}/chat-backend:latest
+            
+#             # Wait for container to start
+#             sleep 5
+            
+#             # Check if container is running
+#             if [ "$(sudo docker ps -q -f name=chat-backend)" ]; then
+#               echo "✅ Deployment successful - Container is running"
+#             else
+#               echo "❌ Container failed to start - showing logs:"
+#               sudo docker logs chat-backend --tail 50
+#               exit 1
+#             fi
+
+#       - name: Verify Deployment
+#         run: |
+#           echo "🎉 Deployment workflow completed!"
+
+# =============================================================================================================================
 name: Deploy Chat Backend
 
 on:
@@ -10,24 +79,39 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
+      # Checkout source code
       - name: Checkout Code
         uses: actions/checkout@v4
 
+      # Login to Docker Hub
       - name: Docker Login
         uses: docker/login-action@v3
         with:
           username: ${{ secrets.DOCKER_USERNAME }}
           password: ${{ secrets.DOCKER_TOKEN }}
 
+      # Build Docker Image
       - name: Build Docker Image
         run: |
-          # Build from backend folder where Dockerfile exists
-          docker build -t ${{ secrets.DOCKER_USERNAME }}/chat-backend:latest .
+          docker build \
+            -t ${{ secrets.DOCKER_USERNAME }}/chat-backend:latest .
 
+      # Push image to Docker Hub
       - name: Push Docker Image
         run: |
           docker push ${{ secrets.DOCKER_USERNAME }}/chat-backend:latest
 
+      # ⭐ NEW: Copy docker-compose.yml to EC2
+      - name: Copy docker-compose.yml to EC2
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: ${{ secrets.EC2_HOST }}
+          username: ubuntu
+          key: ${{ secrets.EC2_SSH_KEY }}
+          source: "docker-compose.yml"
+          target: "/home/ubuntu/chat-backend"
+
+      # ⭐ CHANGED: Deploy using Docker Compose
       - name: Deploy To EC2
         uses: appleboy/ssh-action@v1.2.0
         with:
@@ -35,33 +119,34 @@ jobs:
           username: ubuntu
           key: ${{ secrets.EC2_SSH_KEY }}
           script: |
-            # Pull latest image
-            sudo docker pull ${{ secrets.DOCKER_USERNAME }}/chat-backend:latest
-            
-            # Stop and remove old container
-            sudo docker stop chat-backend || true
-            sudo docker rm chat-backend || true
-            
-            # Run new container with environment variables
-            sudo docker run -d \
-              --restart unless-stopped \
-              --name chat-backend \
-              -p 1111:1111 \
-              --env-file /home/ubuntu/.env \
-              ${{ secrets.DOCKER_USERNAME }}/chat-backend:latest
-            
-            # Wait for container to start
-            sleep 5
-            
-            # Check if container is running
-            if [ "$(sudo docker ps -q -f name=chat-backend)" ]; then
-              echo "✅ Deployment successful - Container is running"
-            else
-              echo "❌ Container failed to start - showing logs:"
-              sudo docker logs chat-backend --tail 50
-              exit 1
-            fi
 
+            # CHANGED: Create folder if it doesn't exist
+            mkdir -p /home/ubuntu/chat-backend
+
+            cd /home/ubuntu/chat-backend
+
+            # CHANGED: Pass Docker username to docker-compose.yml
+            export DOCKER_USERNAME=${{ secrets.DOCKER_USERNAME }}
+
+            echo "Pull latest Docker image..."
+            docker compose pull
+
+            echo "Start latest container..."
+            docker compose up -d
+
+            echo "Waiting for container..."
+            sleep 5
+
+            echo "Running Containers:"
+            docker ps
+
+            echo "Container Logs:"
+            docker compose logs --tail=50
+
+            echo "Cleaning old images..."
+            docker image prune -af || true
+
+      # Verify deployment
       - name: Verify Deployment
         run: |
-          echo "🎉 Deployment workflow completed!"
+          echo "🎉 Backend deployment completed successfully!"

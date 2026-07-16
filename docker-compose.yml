@@ -1,0 +1,17 @@
+version: "3.9"
+
+services:
+  backend:
+    image: ${DOCKER_USERNAME}/chat-backend:latest
+    container_name: chat-backend
+
+    # CHANGED: Auto restart if container crashes
+    restart: unless-stopped
+
+    # CHANGED: Load environment variables from EC2
+    env_file:
+      - /home/ubuntu/.env
+
+    # CHANGED: Expose backend port
+    ports:
+      - "1111:1111"
