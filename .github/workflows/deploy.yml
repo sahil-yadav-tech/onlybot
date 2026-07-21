@@ -79,39 +79,63 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      # Checkout source code
+      # ===================================================
+      # Checkout Repository
+      # ===================================================
       - name: Checkout Code
         uses: actions/checkout@v4
 
-      # Login to Docker Hub
+      # ===================================================
+      # Login DockerHub
+      # ===================================================
       - name: Docker Login
         uses: docker/login-action@v3
         with:
           username: ${{ secrets.DOCKER_USERNAME }}
           password: ${{ secrets.DOCKER_TOKEN }}
 
-      # Build Docker Image
+      # ===================================================
+      # Build Backend Image
+      # ===================================================
       - name: Build Docker Image
         run: |
           docker build \
             -t ${{ secrets.DOCKER_USERNAME }}/chat-backend:latest .
 
-      # Push image to Docker Hub
+      # ===================================================
+      # Push Image
+      # ===================================================
       - name: Push Docker Image
         run: |
           docker push ${{ secrets.DOCKER_USERNAME }}/chat-backend:latest
 
-      # ⭐ NEW: Copy docker-compose.yml to EC2
-      - name: Copy docker-compose.yml to EC2
+      # ===================================================
+      # Create Deployment Folder On EC2
+      # ===================================================
+      - name: Prepare EC2 Folder
+        uses: appleboy/ssh-action@v1.2.0
+        with:
+          host: ${{ secrets.EC2_HOST }}
+          username: ubuntu
+          key: ${{ secrets.EC2_SSH_KEY }}
+          script: |
+            mkdir -p /home/ubuntu/chat-backend
+
+      # ===================================================
+      # Copy Docker Compose + Nginx Config
+      # ===================================================
+      - name: Copy Deployment Files
         uses: appleboy/scp-action@v0.1.7
         with:
           host: ${{ secrets.EC2_HOST }}
           username: ubuntu
           key: ${{ secrets.EC2_SSH_KEY }}
-          source: "docker-compose.yml"
+          source: "docker-compose.yml,nginx"
           target: "/home/ubuntu/chat-backend"
 
-      # ⭐ CHANGED: Deploy using Docker Compose
+      # ===================================================
+      # Deploy Application
+      # ===================================================
       - name: Deploy To EC2
         uses: appleboy/ssh-action@v1.2.0
         with:
@@ -120,21 +144,20 @@ jobs:
           key: ${{ secrets.EC2_SSH_KEY }}
           script: |
 
-            # CHANGED: Create folder if it doesn't exist
-            mkdir -p /home/ubuntu/chat-backend
-
             cd /home/ubuntu/chat-backend
 
-            # CHANGED: Pass Docker username to docker-compose.yml
             export DOCKER_USERNAME=${{ secrets.DOCKER_USERNAME }}
 
-            echo "Pull latest Docker image..."
+            echo "Stopping old containers..."
+            docker compose down || true
+
+            echo "Pulling latest images..."
             docker compose pull
 
-            echo "Start latest container..."
+            echo "Starting containers..."
             docker compose up -d
 
-            echo "Waiting for container..."
+            echo "Waiting for containers..."
             sleep 5
 
             echo "Running Containers:"
@@ -143,10 +166,12 @@ jobs:
             echo "Container Logs:"
             docker compose logs --tail=50
 
-            echo "Cleaning old images..."
+            echo "Removing unused images..."
             docker image prune -af || true
 
-      # Verify deployment
+      # ===================================================
+      # Verify Deployment
+      # ===================================================
       - name: Verify Deployment
         run: |
-          echo "🎉 Backend deployment completed successfully!"
+          echo "Backend deployed successfully."

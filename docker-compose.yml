@@ -1,17 +1,30 @@
-version: "3.9"
-
 services:
+
   backend:
-    image: ${DOCKER_USERNAME}/chat-backend:latest
+    image: sahildocker9082/chat-backend:latest
+
     container_name: chat-backend
 
-    # CHANGED: Auto restart if container crashes
     restart: unless-stopped
 
-    # CHANGED: Load environment variables from EC2
     env_file:
       - /home/ubuntu/.env
 
-    # CHANGED: Expose backend port
+    expose:
+      - "1111"
+
+  nginx:
+    image: nginx:1.27-alpine
+
+    container_name: nginx
+
+    restart: unless-stopped
+
+    depends_on:
+      - backend
+
     ports:
-      - "1111:1111"
+      - "80:80"
+
+    volumes:
+      - ./nginx/default.conf:/etc/nginx/conf.d/default.conf:ro
