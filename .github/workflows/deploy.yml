@@ -1,73 +1,4 @@
-# name: Deploy Chat Backend
-
-# on:
-#   push:
-#     branches:
-#       - main
-
-# jobs:
-#   deploy:
-#     runs-on: ubuntu-latest
-
-#     steps:
-#       - name: Checkout Code
-#         uses: actions/checkout@v4
-
-#       - name: Docker Login
-#         uses: docker/login-action@v3
-#         with:
-#           username: ${{ secrets.DOCKER_USERNAME }}
-#           password: ${{ secrets.DOCKER_TOKEN }}
-
-#       - name: Build Docker Image
-#         run: |
-#           # Build from backend folder where Dockerfile exists
-#           docker build -t ${{ secrets.DOCKER_USERNAME }}/chat-backend:latest .
-
-#       - name: Push Docker Image
-#         run: |
-#           docker push ${{ secrets.DOCKER_USERNAME }}/chat-backend:latest
-
-#       - name: Deploy To EC2
-#         uses: appleboy/ssh-action@v1.2.0
-#         with:
-#           host: ${{ secrets.EC2_HOST }}
-#           username: ubuntu
-#           key: ${{ secrets.EC2_SSH_KEY }}
-#           script: |
-#             # Pull latest image
-#             sudo docker pull ${{ secrets.DOCKER_USERNAME }}/chat-backend:latest
-            
-#             # Stop and remove old container
-#             sudo docker stop chat-backend || true
-#             sudo docker rm chat-backend || true
-            
-#             # Run new container with environment variables
-#             sudo docker run -d \
-#               --restart unless-stopped \
-#               --name chat-backend \
-#               -p 1111:1111 \
-#               --env-file /home/ubuntu/.env \
-#               ${{ secrets.DOCKER_USERNAME }}/chat-backend:latest
-            
-#             # Wait for container to start
-#             sleep 5
-            
-#             # Check if container is running
-#             if [ "$(sudo docker ps -q -f name=chat-backend)" ]; then
-#               echo "✅ Deployment successful - Container is running"
-#             else
-#               echo "❌ Container failed to start - showing logs:"
-#               sudo docker logs chat-backend --tail 50
-#               exit 1
-#             fi
-
-#       - name: Verify Deployment
-#         run: |
-#           echo "🎉 Deployment workflow completed!"
-
-# =============================================================================================================================
-name: Deploy Chat Backend
+name: Deploy Backend
 
 on:
   push:
@@ -79,64 +10,36 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      # ===================================================
-      # Checkout Repository
-      # ===================================================
-      - name: Checkout Code
+      - name: Checkout
         uses: actions/checkout@v4
 
-      # ===================================================
-      # Login DockerHub
-      # ===================================================
       - name: Docker Login
         uses: docker/login-action@v3
         with:
           username: ${{ secrets.DOCKER_USERNAME }}
           password: ${{ secrets.DOCKER_TOKEN }}
 
-      # ===================================================
-      # Build Backend Image
-      # ===================================================
-      - name: Build Docker Image
+      - name: Build Image
         run: |
           docker build \
             -t ${{ secrets.DOCKER_USERNAME }}/chat-backend:latest .
 
-      # ===================================================
-      # Push Image
-      # ===================================================
-      - name: Push Docker Image
+      - name: Push Image
         run: |
           docker push ${{ secrets.DOCKER_USERNAME }}/chat-backend:latest
 
-      # ===================================================
-      # Create Deployment Folder On EC2
-      # ===================================================
-      - name: Prepare EC2 Folder
-        uses: appleboy/ssh-action@v1.2.0
-        with:
-          host: ${{ secrets.EC2_HOST }}
-          username: ubuntu
-          key: ${{ secrets.EC2_SSH_KEY }}
-          script: |
-            mkdir -p /home/ubuntu/chat-backend
-
-      # ===================================================
-      # Copy Docker Compose + Nginx Config
-      # ===================================================
-      - name: Copy Deployment Files
+      - name: Copy Compose & Nginx
         uses: appleboy/scp-action@v0.1.7
         with:
           host: ${{ secrets.EC2_HOST }}
           username: ubuntu
           key: ${{ secrets.EC2_SSH_KEY }}
-          source: "docker-compose.yml,nginx"
-          target: "/home/ubuntu/chat-backend"
+          source: |
+            docker-compose.yml
+            nginx/**
+          target: /home/ubuntu/chat-backend
 
-      # ===================================================
-      # Deploy Application
-      # ===================================================
-      - name: Deploy To EC2
+      - name: Deploy
         uses: appleboy/ssh-action@v1.2.0
         with:
           host: ${{ secrets.EC2_HOST }}
@@ -144,34 +47,20 @@ jobs:
           key: ${{ secrets.EC2_SSH_KEY }}
           script: |
 
+            mkdir -p /home/ubuntu/chat-backend
+
             cd /home/ubuntu/chat-backend
 
             export DOCKER_USERNAME=${{ secrets.DOCKER_USERNAME }}
 
-            echo "Stopping old containers..."
             docker compose down || true
 
-            echo "Pulling latest images..."
             docker compose pull
 
-            echo "Starting containers..."
             docker compose up -d
 
-            echo "Waiting for containers..."
-            sleep 5
+            docker image prune -af
 
-            echo "Running Containers:"
-            docker ps
+            docker compose ps
 
-            echo "Container Logs:"
             docker compose logs --tail=50
-
-            echo "Removing unused images..."
-            docker image prune -af || true
-
-      # ===================================================
-      # Verify Deployment
-      # ===================================================
-      - name: Verify Deployment
-        run: |
-          echo "Backend deployed successfully."

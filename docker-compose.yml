@@ -3,8 +3,6 @@ services:
   backend:
     image: sahildocker9082/chat-backend:latest
 
-    container_name: chat-backend
-
     restart: unless-stopped
 
     env_file:
@@ -15,8 +13,6 @@ services:
 
   nginx:
     image: nginx:1.27-alpine
-
-    container_name: nginx
 
     restart: unless-stopped
 
