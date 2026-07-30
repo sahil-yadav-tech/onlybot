@@ -3,7 +3,7 @@ services:
   backend:
     image: sahildocker9082/chat-backend:latest
 
-    restart: unless-stopped
+    restart: unless-stopped 
 
     env_file:
       - /home/ubuntu/.env
