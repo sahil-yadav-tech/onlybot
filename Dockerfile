@@ -12,4 +12,4 @@ COPY . .
 
 EXPOSE 1111
 
-CMD ["pm2-runtime", "ecosystem.config.js"]
+CMD ["pm2-runtime", "ecosystem.config.cjs"]
